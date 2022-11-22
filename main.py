@@ -1,8 +1,14 @@
 import cv2
 import dxcam
+import keyboard
+import math
 import numpy as np
 from pathlib import Path
 import pydirectinput
+from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtWidgets import QApplication, QMainWindow
+import sys
+import threading
 import time
 import torch
 
@@ -18,6 +24,23 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
+
+is_active = False
+
+def set_active():
+    global is_active
+
+    is_active = not is_active
+    print("program activated" if is_active else "program deactivated")
+
+def start_window(x, y, w, h):
+    global window
+
+    window.setGeometry(x, y, w, h)
+    window.setWindowTitle("Valorant AI")
+
+# Set up keyboard hotkey
+keyboard.add_hotkey("ctrl+alt+s", set_active)
 
 device = torch.device('cuda:0')
 weights = "yolov7_custom2.pt"
@@ -44,10 +67,16 @@ model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters()
 old_img_w = old_img_h = imgsz
 old_img_b = 1
 
-# with mss.mss() as sct:
 camera = dxcam.create()
 camera.start(target_fps=200, video_mode=True)
+
+start_window(0, 0, 1600, 900)
+
 while True:
+    if not is_active:
+        cv2.destroyAllWindows()
+        continue
+
     loop_time = time.time()
 
     # Read image
@@ -80,7 +109,7 @@ while True:
     # Process detections
     for i, det in enumerate(pred):  # detections per image
         s, im0, frame = '', img0, getattr(dataset, 'frame', 0)
-        gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
+        # gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
 
     if len(det):
         # Rescale boxes from img_size to im0 size
@@ -89,13 +118,17 @@ while True:
         # Write results
         for *xyxy, conf, cls in reversed(det):
             label = f'{names[int(cls)]} {conf:.2f}'
+            if names[int(cls)] == "enemy":
+                x_avg = int((int(xyxy[0]) + int(xyxy[2]))/2)
+                y_avg = int((int(xyxy[3]) + int(xyxy[1]))/2)
+
+                pydirectinput.moveTo(x_avg, y_avg)
+                pydirectinput.leftClick()
+
             plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
 
     # Print time (inference + NMS)
-    print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
+    print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS | {math.ceil(1/(time.time() - loop_time))} FPS')
 
     # Stream results
     im0 = cv2.cvtColor(im0, cv2.COLOR_BGR2RGB)
-    cv2.putText(im0, f"{1/(time.time() - loop_time):.2f} fps", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, 2)
-    cv2.imshow("amogus ", im0)
-    cv2.waitKey(1)  # 1 millisecond
