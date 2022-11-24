@@ -16,6 +16,7 @@ from utils.torch_utils import TracedModel, time_synchronized
 
 class Detector(QtCore.QThread):
     frame = QtCore.pyqtSignal(ndarray)
+    fps = QtCore.pyqtSignal(int)
 
     def __init__(self):
         QtCore.QThread.__init__(self)
@@ -49,10 +50,6 @@ class Detector(QtCore.QThread):
         camera = dxcam.create()
         camera.start(target_fps=200, video_mode=True)
         while True:
-            # if not is_active:
-            #     cv2.destroyAllWindows()
-            #     continue
-
             loop_time = time.time()
 
             # Read image
@@ -104,6 +101,7 @@ class Detector(QtCore.QThread):
                     plot_one_box(xyxy, im0, label=label, color=self.colors[int(cls)], line_thickness=1)
 
             # Print time (inference + NMS)
-            print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS | {math.ceil(1/(time.time() - loop_time))} FPS')
+            # print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS | {math.ceil(1/(time.time() - loop_time))} FPS')
 
             self.frame.emit(im0)
+            self.fps.emit(int(1/(time.time() - loop_time)))
