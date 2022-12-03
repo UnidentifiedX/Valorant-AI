@@ -19,23 +19,6 @@ import torchvision
 import torch.backends.cudnn as cudnn
 import yaml
 
-# is_active = False
-
-# def set_active():
-#     global is_active
-
-#     is_active = not is_active
-#     print("program activated" if is_active else "program deactivated")
-
-# def start_window(x, y, w, h):
-#     global window
-
-#     window.setGeometry(x, y, w, h)
-#     window.setWindowTitle("Valorant AI")
-
-# # Set up keyboard hotkey
-# keyboard.add_hotkey("ctrl+alt+s", set_active)
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

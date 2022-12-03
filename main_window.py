@@ -1,6 +1,7 @@
 import copy
 import cv2
 from numpy import ndarray
+import numpy as np
 import time
 
 from detector import Detector
@@ -48,7 +49,7 @@ class MainWindow(QtWidgets.QWidget):
         
         self.screenshotter.moveToThread(self.thread)
         self.thread.started.connect(self.screenshotter.screenshot)
-        self.thread.start()
+        self.thread.start() 
 
     def log_console(self, content):
         self.output_textbox.append(content)
@@ -61,7 +62,9 @@ class MainWindow(QtWidgets.QWidget):
         
         # display game map state
         map_img = frame[20:465, 10:450] # [y:y+h, x:x+w]
-        map_pixmap = nd2qpixmap(map_img)
+        img_gray = cv2.cvtColor(map_img, cv2.COLOR_BGR2GRAY)
+        (threshi, img_bw) = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        map_pixmap = nd2qpixmap(img_bw)
         self.game_map_image.setPixmap(map_pixmap)
     
     def display_fps(self, fps):
@@ -69,8 +72,18 @@ class MainWindow(QtWidgets.QWidget):
 
 # ndarray to qpixmap
 def nd2qpixmap(nd: ndarray):
-    h, w, _ = nd.shape
-    qImg = QtGui.QImage(nd.data.tobytes(), w, h, 3 * w, QtGui.QImage.Format_RGB888)
-    pixmap = QtGui.QPixmap.fromImage(qImg)
-    
-    return pixmap
+    gray_color_table = [QtGui.qRgb(i, i, i) for i in range(256)]
+
+    if nd.dtype == np.uint8:
+        if len(nd.shape) == 2:
+            qImg = QtGui.QImage(nd.data, nd.shape[1], nd.shape[0], nd.strides[0], QtGui.QImage.Format.Format_Indexed8)
+            qImg.setColorTable(gray_color_table)
+            return QtGui.QPixmap.fromImage(qImg)
+
+        elif len(nd.shape) == 3:
+            if nd.shape[2] == 3:
+                qImg = QtGui.QImage(nd.data, nd.shape[1], nd.shape[0], nd.strides[0], QtGui.QImage.Format.Format_RGB888)
+                return QtGui.QPixmap.fromImage(qImg)
+            elif nd.shape[2] == 4:
+                qImg = QtGui.QImage(nd.data, nd.shape[1], nd.shape[0], nd.strides[0], QtGui.QImage.Format.Format_ARGB32)
+                return QtGui.QPixmap.fromImage(qImg)

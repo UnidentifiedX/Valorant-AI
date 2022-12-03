@@ -1,12 +1,14 @@
 import cv2
 import dxcam
 import math
+import keyboard
 import numpy as np
 from numpy import ndarray
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import QThread
 import time
 import torch
+import win32gui
 
 from utils.datasets import LoadImages, letterbox
 from models.experimental import attempt_load
@@ -20,6 +22,9 @@ class Detector(QtCore.QThread):
 
     def __init__(self):
         QtCore.QThread.__init__(self)
+
+        # # Set up keyboard hotkey
+        # keyboard.add_hotkey("ctrl+alt+s", self.set_active)
 
         self.device = torch.device('cuda:0')
         weights = "yolov7_custom2.pt"
@@ -43,12 +48,11 @@ class Detector(QtCore.QThread):
 
         # Run inference
         self.model(torch.zeros(1, 3, imgsz, imgsz).to(self.device).type_as(next(self.model.parameters())))  # run once
-        old_img_w = old_img_h = imgsz
-        old_img_b = 1
 
     def screenshot(self):
         camera = dxcam.create()
         camera.start(target_fps=200, video_mode=True)
+
         while True:
             loop_time = time.time()
 
@@ -101,7 +105,7 @@ class Detector(QtCore.QThread):
                     plot_one_box(xyxy, im0, label=label, color=self.colors[int(cls)], line_thickness=1)
 
             # Print time (inference + NMS)
-            # print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS | {math.ceil(1/(time.time() - loop_time))} FPS')
+            # print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
 
             self.frame.emit(im0)
             self.fps.emit(int(1/(time.time() - loop_time)))
