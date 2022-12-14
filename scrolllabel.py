@@ -38,4 +38,4 @@ class ScrollLabel(QtWidgets.QScrollArea):
         return self.label.text()
 
     def append(self, text):
-        self.label.setText(self.text() + "\n" + text)
+        self.label.setText(self.text() + "\n" + text if self.text() != "" else text)

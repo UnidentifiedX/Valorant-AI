@@ -38,6 +38,10 @@ data/images/*
 results*.csv
 
 testing.py
+hsvrangefinder.py
+houghcircleparamfinder.py
+
+!Maps/**
 
 # Datasets -------------------------------------------------------------------------------------------------------------
 coco/

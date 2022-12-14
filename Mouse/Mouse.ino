@@ -9,7 +9,6 @@ const int posMax = 127;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(2000000);
-  AbsoluteMouse.begin();
   delay(3000);
 }
 
