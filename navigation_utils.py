@@ -6,9 +6,10 @@ from numpy import ndarray
 from PyQt5 import QtGui
 
 class MarkedCircles:
-    def __init__(self, mask_marked: Mat, rot: float):
+    def __init__(self, mask_marked: Mat, rot: float, pos: tuple):
         self.mask_marked = mask_marked
         self.rotation = rot
+        self.position = pos
 
 
 # https://github.com/TheRabbitProgram/Valorant-AimBot-and-Navigation-Bot/blob/main/Navigation/MapCaptureTest.py
@@ -45,6 +46,7 @@ def angle(point_a, point_b):
 
 def mark_circles(mask: Mat):
     rot = None
+    largest_offset = None
 
     mask_marked = mask.copy()
     mask = cv2.inRange(cv2.cvtColor(mask, cv2.COLOR_RGB2HSV),
@@ -77,7 +79,7 @@ def mark_circles(mask: Mat):
     if circles is not None and largest_offset is not None:
         rot = angle((circles[0][0][0], circles[0][0][1]), largest_offset)
 
-    return MarkedCircles(mask_marked, rot)
+    return MarkedCircles(mask_marked, rot, largest_offset)
 
 # ndarray to qpixmap
 # https://gist.github.com/smex/5287589

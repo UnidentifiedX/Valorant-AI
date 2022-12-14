@@ -59,6 +59,8 @@ class MainWindow(QtWidgets.QWidget):
         self.start_game_button.clicked.connect(self.start_game)
         self.start_game_button.show()
 
+        # Change travel route
+
         # FPS text
         self.fps_text = QtWidgets.QLabel()
         self.fps_text.setGeometry(1750, 0, 100, 15)
@@ -140,8 +142,7 @@ class MainWindow(QtWidgets.QWidget):
             retrieved_map_img = cv2.cvtColor(cv2.imread(f"./Maps/{map_file_name}"), cv2.COLOR_BGR2RGB)
 
         # Make all pixels that are not black white
-        # retrieved_map_img[retrieved_map_img != 0] = 255
-
+        retrieved_map_img[retrieved_map_img != 0] = 255
 
         self.is_map_initialised = True
 
@@ -163,8 +164,13 @@ class MainWindow(QtWidgets.QWidget):
 
             rotation = marked_circle.rotation
             mask = marked_circle.mask_marked
+            position = marked_circle.position
 
+            # display rotation
             self.rotation_text.setText(f"{rotation:.2f} deg" if rotation != None else "ROTATION UNKNOWN")
+
+            # display coordinates
+            self.coordinates_text.setText(f"{position[0]}X {position[1]}Y" if position != None else "COORDS UNKNOWN")
 
             map_pixmap = nd2qpixmap(mask)
             self.game_map_image.setPixmap(map_pixmap)
