@@ -40,6 +40,7 @@ results*.csv
 testing.py
 hsvrangefinder.py
 houghcircleparamfinder.py
+pathfinder.py
 
 !Maps/**
 

@@ -5,7 +5,8 @@ import keyboard
 import numpy as np
 from numpy import ndarray
 from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QRunnable, QObject
+from signals import DetectorSignals
 import time
 import torch
 import win32gui
@@ -16,15 +17,13 @@ from utils.general import check_img_size, non_max_suppression, scale_coords
 from utils.plots import plot_one_box
 from utils.torch_utils import TracedModel, time_synchronized
 
-class Detector(QtCore.QThread):
-    frame = QtCore.pyqtSignal(ndarray)
-    fps = QtCore.pyqtSignal(int)
-
+class Detector(QRunnable):
     def __init__(self):
-        QtCore.QThread.__init__(self)
+        # QtCore.QThread.__init__(self)
+        super(Detector, self).__init__()
 
-        # # Set up keyboard hotkey
-        # keyboard.add_hotkey("ctrl+alt+s", self.set_active)
+        # initialise signals
+        self.signals = DetectorSignals()
 
         self.device = torch.device('cuda:0')
         weights = "yolov7_custom2.pt"
@@ -49,7 +48,7 @@ class Detector(QtCore.QThread):
         # Run inference
         self.model(torch.zeros(1, 3, imgsz, imgsz).to(self.device).type_as(next(self.model.parameters())))  # run once
 
-    def screenshot(self):
+    def run(self):
         camera = dxcam.create()
         camera.start(target_fps=200, video_mode=True)
 
@@ -107,5 +106,7 @@ class Detector(QtCore.QThread):
             # Print time (inference + NMS)
             # print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
 
-            self.frame.emit(im0)
-            self.fps.emit(int(1/(time.time() - loop_time)))
+            # self.frame.emit(im0)
+            # self.fps.emit(int(1/(time.time() - loop_time)))
+            self.signals.frame.emit(im0)
+            self.signals.fps.emit(int(1/(time.time() - loop_time)))

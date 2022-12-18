@@ -2,15 +2,22 @@ import copy
 import cv2
 import keyboard
 from numpy import ndarray
+import multiprocessing
 import numpy as np
 import os
+import threading
 import time
 
 from detector import Detector
+from navigator import Navigator
 from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QThreadPool
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from scrolllabel import ScrollLabel
+
+from pathfinding.core.diagonal_movement import DiagonalMovement
+from pathfinding.core.grid import Grid
+from pathfinding.finder.a_star import AStarFinder
 
 from navigation_utils import nd2qpixmap, mark_circles
 
@@ -21,6 +28,7 @@ class MainWindow(QtWidgets.QWidget):
         # Set up keyboard hotkeys
         keyboard.add_hotkey("ctrl+alt+g", self.initialise_game)
         keyboard.add_hotkey("ctrl+alt+s", self.start_game)
+        # keyboard.add_hotkey("ctrl+alt+r", pick_and_move_destination, args=(self.coordinates, self.map_bw,))
 
         # Set map initialisation to false
         self.is_map_initialised = False
@@ -60,6 +68,12 @@ class MainWindow(QtWidgets.QWidget):
         self.start_game_button.show()
 
         # Change travel route
+        self.change_route_button = QtWidgets.QPushButton("Change travel route (Ctrl+Alt+R)")
+        self.change_route_button.setGeometry(1300, 530, 440, 30)
+        self.change_route_button.setParent(self)
+        self.change_route_button.setToolTip("Change travel route")
+        # self.change_route_button.clicked.connect(self.pick_and_move_destination)
+        self.change_route_button.show()
 
         # FPS text
         self.fps_text = QtWidgets.QLabel()
@@ -85,18 +99,18 @@ class MainWindow(QtWidgets.QWidget):
         self.rotation_text.setParent(self)
         self.rotation_text.show()
 
+        self.threadpool = QThreadPool()
+        self.log_console(f"Multithreading with maximum {self.threadpool.maxThreadCount()} threads")
+
         self.screenshot()
 
     def screenshot(self):
         self.screenshotter = Detector()
-        self.thread = QThread()
 
-        self.screenshotter.frame.connect(self.display_results)
-        self.screenshotter.fps.connect(self.display_fps)
+        self.screenshotter.signals.frame.connect(self.display_results)
+        self.screenshotter.signals.fps.connect(self.display_fps)
         
-        self.screenshotter.moveToThread(self.thread)
-        self.thread.started.connect(self.screenshotter.screenshot)
-        self.thread.start() 
+        self.threadpool.start(self.screenshotter)
 
     def log_console(self, content):
         self.output_textbox.append(content)
@@ -112,7 +126,13 @@ class MainWindow(QtWidgets.QWidget):
             
             return
 
+        self.navigate()
         print("Game started")
+        
+    def navigate(self):
+        self.navigator = Navigator(self.coordinates, self.map_grid)
+
+        self.threadpool.start(self.navigator)
 
     def initialise_game(self):
         self.initialise_map()
@@ -139,11 +159,15 @@ class MainWindow(QtWidgets.QWidget):
                         lowest = mean_diff
             
             self.map_text.setText(map_file_name.replace(".png", ""))
-            retrieved_map_img = cv2.cvtColor(cv2.imread(f"./Maps/{map_file_name}"), cv2.COLOR_BGR2RGB)
+            retrieved_map_img = cv2.imread(f"./Maps/{map_file_name}", cv2.IMREAD_GRAYSCALE)
 
         # Make all pixels that are not black white
         retrieved_map_img[retrieved_map_img != 0] = 255
+        retrieved_map_img = (retrieved_map_img == 255).astype(int) # to 0 and 1 array
 
+        grid = Grid(matrix=retrieved_map_img)
+
+        self.map_grid = grid
         self.is_map_initialised = True
 
     def display_results(self, frame):
@@ -174,6 +198,8 @@ class MainWindow(QtWidgets.QWidget):
 
             map_pixmap = nd2qpixmap(mask)
             self.game_map_image.setPixmap(map_pixmap)
+
+            self.coordinates = position
 
             return
         

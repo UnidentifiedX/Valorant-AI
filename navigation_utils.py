@@ -3,7 +3,12 @@ from cv2 import Mat
 import math
 import numpy as np
 from numpy import ndarray
+from pathfinding.core.diagonal_movement import DiagonalMovement
+from pathfinding.core.grid import Grid
+from pathfinding.finder.a_star import AStarFinder
+import pydirectinput
 from PyQt5 import QtGui
+import time
 
 class MarkedCircles:
     def __init__(self, mask_marked: Mat, rot: float, pos: tuple):
@@ -101,3 +106,22 @@ def nd2qpixmap(nd: ndarray):
             elif nd.shape[2] == 4:
                 qImg = QtGui.QImage(nd.data, nd.shape[1], nd.shape[0], nd.strides[0], QtGui.QImage.Format.Format_ARGB32)
                 return QtGui.QPixmap.fromImage(qImg)
+
+def grid_numpy(self: Grid, start, end, path = None, path_colour = [255, 0, 0]):
+    data = []
+    for y in range(len(self.nodes)):
+        line = []
+        for x in range(len(self.nodes[y])):
+            node = self.nodes[y][x]
+            if path and ((node.x, node.y) in path or node in path) or node == start or node == end:
+                line.append([255, 0, 0])
+            elif node.walkable:
+                # empty field
+                line.append([255, 255, 255])
+            else:
+                line.append([0, 0, 0])  # blocked field
+
+        data.append(line)
+    
+    return np.array(data, dtype=np.uint8)
+

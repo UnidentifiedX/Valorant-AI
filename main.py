@@ -19,6 +19,8 @@ import torchvision
 import torch.backends.cudnn as cudnn
 import yaml
 
+# window = None
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
