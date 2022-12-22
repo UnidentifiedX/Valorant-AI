@@ -165,9 +165,10 @@ class MainWindow(QtWidgets.QWidget):
         retrieved_map_img[retrieved_map_img != 0] = 255
         retrieved_map_img = (retrieved_map_img == 255).astype(int) # to 0 and 1 array
 
-        grid = Grid(matrix=retrieved_map_img)
+        # grid = Grid(matrix=retrieved_map_img)
 
-        self.map_grid = grid
+        # self.map_grid = grid
+        self.retrieved_map_img = retrieved_map_img
         self.is_map_initialised = True
 
     def display_results(self, frame):

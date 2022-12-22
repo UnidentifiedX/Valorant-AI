@@ -1,5 +1,6 @@
 import cv2
 from cv2 import Mat
+from enum import Enum
 import math
 import numpy as np
 from numpy import ndarray
@@ -113,8 +114,12 @@ def grid_numpy(self: Grid, start, end, path = None, path_colour = [255, 0, 0]):
         line = []
         for x in range(len(self.nodes[y])):
             node = self.nodes[y][x]
-            if path and ((node.x, node.y) in path or node in path) or node == start or node == end:
+            if path and ((node.x, node.y) in path or node in path):
                 line.append([255, 0, 0])
+            elif node == start:
+                line.append([255, 0, 0])
+            elif node == end:
+                line.append([0, 0, 255])
             elif node.walkable:
                 # empty field
                 line.append([255, 255, 255])
@@ -125,3 +130,34 @@ def grid_numpy(self: Grid, start, end, path = None, path_colour = [255, 0, 0]):
     
     return np.array(data, dtype=np.uint8)
 
+class NavigationDirection(Enum):
+    FORWARDS = 0,
+    BACKWARDS = 1,
+    LEFT = 2,
+    RIGHT = 3
+
+class Waypoint:
+    def __init__(self, x, y, direction_to_rotate: NavigationDirection):
+        self.x = x
+        self.y = y
+        self.direction_to_rotate: NavigationDirection = direction_to_rotate
+        
+
+def get_waypoints(path: list[tuple]):
+    waypoints: list[Waypoint] = []
+
+    for i in range(1, len(path)):
+        # ↑
+        if path[i - 1][1] > path[i][1] and (len(waypoints) == 0 or waypoints[-1].direction_to_rotate != NavigationDirection.FORWARDS):
+            waypoints.append(Waypoint(path[i - 1][0], path[i - 1][1], NavigationDirection.FORWARDS))
+        # ↓
+        elif path[i - 1][1] < path[i][1] and (len(waypoints) == 0 or waypoints[-1].direction_to_rotate != NavigationDirection.BACKWARDS):
+            waypoints.append(Waypoint(path[i - 1][0], path[i - 1][1], NavigationDirection.BACKWARDS))
+        # ←
+        elif path[i - 1][0] > path[i][0] and (len(waypoints) == 0 or waypoints[-1].direction_to_rotate != NavigationDirection.LEFT):
+            waypoints.append(Waypoint(path[i - 1][0], path[i - 1][1], NavigationDirection.LEFT))
+        # →
+        elif path[i - 1][0] < path[i][0] and (len(waypoints) == 0 or waypoints[-1].direction_to_rotate != NavigationDirection.RIGHT):
+            waypoints.append(Waypoint(path[i - 1][0], path[i - 1][1], NavigationDirection.RIGHT))
+
+    return waypoints
