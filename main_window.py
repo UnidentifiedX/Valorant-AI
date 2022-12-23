@@ -19,7 +19,8 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
-from navigation_utils import nd2qpixmap, mark_circles
+# from navigation_utils import nd2qpixmap, mark_circles
+from navigation_utils import nd2qpixmap
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
@@ -130,7 +131,7 @@ class MainWindow(QtWidgets.QWidget):
         print("Game started")
         
     def navigate(self):
-        self.navigator = Navigator(self.coordinates, self.map_grid)
+        self.navigator = Navigator(self.coordinates, self.retrieved_map_img)
 
         self.threadpool.start(self.navigator)
 
@@ -165,14 +166,11 @@ class MainWindow(QtWidgets.QWidget):
         retrieved_map_img[retrieved_map_img != 0] = 255
         retrieved_map_img = (retrieved_map_img == 255).astype(int) # to 0 and 1 array
 
-        # grid = Grid(matrix=retrieved_map_img)
-
-        # self.map_grid = grid
         self.retrieved_map_img = retrieved_map_img
         self.is_map_initialised = True
 
     def display_results(self, frame):
-        self.current_game_frame = frame # make the frame accessible for other methods such as initialising the map
+        self.current_game_frame = frame # make the frame accessible for other methods such as initialising the map that doesn't require real-time frame information
 
         # display game screen
         resized_frame = cv2.resize(frame, dsize=(1280, 720))
@@ -185,7 +183,7 @@ class MainWindow(QtWidgets.QWidget):
         # calculate coordinates and view angle if the map as been initialised
         if self.is_map_initialised:
             # mark player circle
-            marked_circle = mark_circles(map_img)
+            marked_circle = Navigator.mark_circles(map_img)
 
             rotation = marked_circle.rotation
             mask = marked_circle.mask_marked
